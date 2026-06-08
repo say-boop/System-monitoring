@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>System Monitoring</title>
+</head>
+<body>
+	<h1>System Monitoring</h1>
+	<div>
+		<p>CPU<span id="cpu-value">{{ cpu_percent }}</span>%</p>
+	</div>
+	<div>
+		<p>Memory Total<span id="memory-total-value">{{ memory_total }}</span>GB</p>
+	</div>
+	<div>
+		<p>Memory Available<span id="memory-available-value">{{ memory_available }}</span>GB</p>
+	</div>
+	<script src="/static/js/index.js"></script>
+</body>
+</html>
