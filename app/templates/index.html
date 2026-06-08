@@ -3,18 +3,53 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="/static/css/index.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<title>System Monitoring</title>
 </head>
 <body>
 	<h1>System Monitoring</h1>
-	<div>
-		<p>CPU<span id="cpu-value">{{ cpu_percent }}</span>%</p>
-	</div>
-	<div>
-		<p>Memory Total<span id="memory-total-value">{{ memory_total }}</span>GB</p>
-	</div>
-	<div>
-		<p>Memory Available<span id="memory-available-value">{{ memory_available }}</span>GB</p>
+	<div class="metrics-grid">
+		<div class="card">
+			<h3>CPU</h3>
+			<span id="cpu-value"></span> %<br>-------------------------
+			<span id="cpu-cores"></span>
+		</div>
+		<div class="card">
+			<h3>RAM</h3>
+			<span id="memory-percent"></span>
+			<span id="memory-details"></span>
+		</div>
+		<div class="card">
+			<h3>Disk C:</h3>
+			<span id="disk-percent"></span>
+			<span id="disk-details"></span>
+		</div>
+		<div class="card">
+			<h3>Network</h3>
+			<span id="net-sent-recv"></span>
+		</div>
+		<div style="width: 800; height: 300;">
+			<h3>CPU History</h3>
+			<canvas id="cpu-history-chart"></canvas>
+			<h3>CPU Per Core</h3>
+			<canvas id="cpu-cores-chart"></canvas>
+		</div>
+		<div>
+			<h3>Top 5 Processes</h3>
+			<table>
+				<thead>
+					<tr>
+						<th>PID</th>
+						<th>Name</th>
+						<th>CPU%</th>
+					</tr>
+				</thead>
+				<tbody id="processes-table">
+					
+				</tbody>
+			</table>
+		</div>
 	</div>
 	<script src="/static/js/index.js"></script>
 </body>
