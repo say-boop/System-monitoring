@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🖥️ System Monitor
 
 Веб-дашборд для мониторинга системы в реальном времени. Показывает загрузку CPU, память, диск, сеть и топ процессов.
@@ -106,6 +105,3 @@ system-monitor/
 ├── pyproject.toml           # Зависимости Poetry
 └── README.md
 ```
-=======
-# System-monitoring
->>>>>>> 1340d67fde2a2b5721e33f5a4ee0b0c59dcec2f2
