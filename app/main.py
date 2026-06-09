@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import logging
@@ -41,6 +41,23 @@ def get_metrics():
 	return get_metrics_all()
 
 
+@app.delete("/api/process/{pid}")
+def kill_process(pid: int):
+	try:
+		process = psutil.Process(pid)
+		process.terminate()
+		
+		return {
+			"status": "terminated",
+			"pid": pid
+		}
+	
+	except psutil.NoSuchProcess:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Процесс не найден")
+	except psutil.AccessDenied:
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет прав на завершение процесса")
+
+
 def get_metrics_all():
 	cpu_percent = psutil.cpu_percent(interval=0.3)
 	cpu_per_core = psutil.cpu_percent(interval=None, percpu=True)
@@ -72,8 +89,13 @@ def get_metrics_all():
 	for proc in proc_objects:
 		try:
 			info = proc.info
+			
+			if not info["name"]:
+				info["name"] = "System"
+			
 			if info["name"] == "System Idle Process":
 				continue
+			
 			raw_cpu = proc.cpu_percent(interval=None)
 			info["cpu_percent"] = round(raw_cpu / psutil.cpu_count(), 1)
 			result.append(info)

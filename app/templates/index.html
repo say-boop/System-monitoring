@@ -3,54 +3,59 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="/static/css/index.css">
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<link rel="stylesheet" href="/static/css/style.css">
 	<title>System Monitoring</title>
 </head>
 <body>
-	<h1>System Monitoring</h1>
-	<div class="metrics-grid">
-		<div class="card">
-			<h3>CPU</h3>
-			<span id="cpu-value"></span> %<br>-------------------------
-			<span id="cpu-cores"></span>
+	<header class="main-header">
+		<h1>System Monitoring</h1>
+	</header>
+	<main class="dashboard-container">
+		<div class="metrics-grid">
+			<div class="card">
+				<h3>CPU</h3>
+				<div class="card-style"><span id="cpu-value"></span>%</div>
+				<div class="cpu-cores-style"><span id="cpu-cores"></span></div>
+			</div>
+			<div class="card">
+				<h3>RAM</h3>
+				<div class="card-style"><span id="memory-percent"></span>%</div>
+				<div class="mem-details-style"><span id="memory-details"></span></div>
+			</div>
+			<div class="card">
+				<h3>Disk C:</h3>
+				<div class="card-style"><span id="disk-percent"></span>%</div>
+				<div class="disk-details-style"><span id="disk-details"></span></div>
+			</div>
+			<div class="card">
+				<h3>Network</h3>
+				<div class="network-style"><span id="net-sent-recv"></span></div>
+			</div>
+			<div class="table-processes">
+				<h3>Top 5 Processes</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>PID</th>
+							<th>Name</th>
+							<th>CPU%</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody id="processes-table">
+		
+					</tbody>
+				</table>
+			</div>
 		</div>
-		<div class="card">
-			<h3>RAM</h3>
-			<span id="memory-percent"></span>
-			<span id="memory-details"></span>
-		</div>
-		<div class="card">
-			<h3>Disk C:</h3>
-			<span id="disk-percent"></span>
-			<span id="disk-details"></span>
-		</div>
-		<div class="card">
-			<h3>Network</h3>
-			<span id="net-sent-recv"></span>
-		</div>
-		<div style="width: 800; height: 300;">
+		<div>
 			<h3>CPU History</h3>
 			<canvas id="cpu-history-chart"></canvas>
 			<h3>CPU Per Core</h3>
 			<canvas id="cpu-cores-chart"></canvas>
 		</div>
-		<div>
-			<h3>Top 5 Processes</h3>
-			<table>
-				<thead>
-					<tr>
-						<th>PID</th>
-						<th>Name</th>
-						<th>CPU%</th>
-					</tr>
-				</thead>
-				<tbody id="processes-table">
-					
-				</tbody>
-			</table>
-		</div>
-	</div>
+	</main>
 	<script src="/static/js/index.js"></script>
 </body>
 </html>
