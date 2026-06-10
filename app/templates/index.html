@@ -10,6 +10,7 @@
 <body>
 	<header class="main-header">
 		<h1>System Monitoring</h1>
+		<button class="button-export" onclick="exportReport()">📄 Export Report</button>
 	</header>
 	<main class="dashboard-container">
 		<div class="metrics-grid">
@@ -43,6 +44,7 @@
 							<th>PID</th>
 							<th>Name</th>
 							<th>CPU%</th>
+							<th>Threads</th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -50,6 +52,11 @@
 		
 					</tbody>
 				</table>
+			</div>
+			<div class="card" id="process-detail" style="display: none;">
+				<h3>Process Details</h3>
+				<div class="process-detail-content" id="process-detail-content"></div>
+				<button class="detail-close-btn" onclick="document.getElementById('process-detail').style.display='none'">Close</button>
 			</div>
 			<div class="table-processes">
 				<h3>Network Connections</h3>
@@ -86,9 +93,15 @@
 		<div>
 			<h3>CPU History</h3>
 			<canvas id="cpu-history-chart"></canvas>
+			<h3>Network History</h3>
+			<canvas id="network-chart"></canvas>
 			<h3>CPU Per Core</h3>
 			<canvas id="cpu-cores-chart"></canvas>
-			<h3>History (last 60 minutes)</h3>
+			<h3 id="history-title">History (last 60 minutes)</h3>
+			<div class="button-change-history">
+				<button class="range-btn active" data-range="hour">1 Hour</button>
+				<button class="range-btn" data-range="day">24 Hours</button>
+			</div>
 			<canvas id="history-chart"></canvas>
 		</div>
 	</main>

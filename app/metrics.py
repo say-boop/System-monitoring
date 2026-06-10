@@ -88,6 +88,12 @@ def get_metrics_all():
 	for proc in proc_objects:
 		try:
 			info = proc.info
+
+			try:
+				proc_obj = psutil.Process(info["pid"])
+				info["threads"] = proc_obj.num_threads()
+			except(psutil.NoSuchProcess, psutil.AccessDenied):
+				info["threads"] = 0
 			
 			if not info["name"]:
 				info["name"] = "System"

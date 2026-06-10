@@ -24,6 +24,36 @@ const cpuHistoryChart = new Chart(ctx, {
   },
 });
 
+const netSentHistory = new Array(30).fill(0);
+const netRecvHistory = new Array(30).fill(0);
+
+const ctxNetwork = document.getElementById("network-chart").getContext("2d");
+const networkChart = new Chart(ctxNetwork, {
+  type: "line",
+  data: {
+    labels: [...Array(30).keys()].map((i) => i + 1),
+    datasets: [
+      {
+        label: "Sent KB/s",
+        data: netSentHistory,
+        borderColor: "rgb(255, 99, 132)",
+        tension: 0.1,
+      },
+      {
+        label: "Recv KB/s",
+        data: netRecvHistory,
+        borderColor: "rgb(54, 162, 235)",
+        tension: 0.1,
+      },
+    ],
+  },
+	options: {
+		scales: {
+			y: {min: 0}
+		}
+	}
+});
+
 const ctxCores = document.getElementById("cpu-cores-chart").getContext("2d");
 const cpuCoresChart = new Chart(ctxCores, {
   type: "bar",
@@ -75,6 +105,17 @@ const historyChart = new Chart(ctxHistory, {
   },
 });
 
+document.querySelectorAll(".range-btn").forEach(function(btn) {
+	btn.addEventListener("click", function() {
+		document.querySelectorAll(".range-btn").forEach(function(otherBtn) {
+			otherBtn.classList.remove("active");
+		});
+		this.classList.add("active");
+		var range = this.getAttribute("data-range");
+		loadHistory(range)
+	})
+})
+
 function showNotification(text, type = "info", duration = 4000) {
   if (type == "access") type = "success";
 
@@ -117,34 +158,113 @@ async function killProcess(pid) {
     if (response.ok) {
       showNotification("Process killed", "access");
     } else {
-      alert(`Failed to kill process ${pid}`);
+      showNotification(`Failed to kill process ${pid}`, "warning")
     }
   } catch (error) {
     console.error("Error:", error);
   }
 }
 
-async function loadHistory() {
+async function showProcessInfo(pid) {
+	try {
+		const response = await fetch(`/api/process/${pid}/info`);
+		if (!response.ok) {
+			showNotification("Failed to get process info", "warning");
+			return;
+		}
+		const info = await response.json();
+		
+		const content = document.getElementById("process-detail-content");
+		content.innerHTML = `
+    	<div class="detail-row">
+        <span class="detail-label">Name:</span>
+        <span class="detail-value process-name">${info.name}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">PID:</span>
+        <span class="detail-value">${info.pid}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">Status:</span>
+        <span class="detail-value">${info.status}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">CPU:</span>
+        <span class="detail-value">${info.cpu_percent}%</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">Memory:</span>
+        <span class="detail-value">${info.memory_mb || info.memory}%</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">Threads:</span>
+        <span class="detail-value">${info.threads}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">User:</span>
+        <span class="detail-value">${info.username}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">Created:</span>
+        <span class="detail-value">${info.create_time}</span>
+    	</div>
+    	<div class="detail-row">
+        <span class="detail-label">Path:</span>
+        <span class="detail-value process-path">${info.exe}</span>
+    	</div>
+		`;
+		
+		document.getElementById("process-detail").style.display = "block";
+	} catch (error) {
+		console.error("Error:", error)
+	}
+}
+
+async function loadHistory(range = "hour") {
+	console.log("Loading history for range:", range);
 	try {
 		const response = await fetch("/api/history");
 		const data = await response.json();
 		
 		data.reverse();
 		
-		historyChart.data.labels = data.map(row => row.timestamp.slice(11, 16));
+		historyChart.data.labels = data.map(row => {
+			const d = new Date(row.timestamp);
+			const hh = String(d.getHours()).padStart(2, "0");
+			const mm = String(d.getMinutes()).padStart(2, "0");
+			if (range === "day") {
+				const dd = String(d.getDate()).padStart(2, "0");
+				const mon = String(d.getMonth() + 1).padStart(2, "0");
+				return `${dd}.${mon} ${hh}:${mm}`;
+			}
+			return `${hh}:${mm}`;
+		});
 		historyChart.data.datasets[0].data = data.map(row => row.cpu_percent);
 		historyChart.data.datasets[1].data = data.map(row => row.memory_percent);
 		historyChart.data.datasets[2].data = data.map(row => row.disk_percent);
 		
 		historyChart.update()
+		
+		const title = document.getElementById("history-title");
+		if (range === "day") {
+			title.textContent = "History (last 24 hours)";
+		} else {
+			title.textContent = "History (last 60 minutes)";
+		}
 	} catch (error) {
 		showNotification("Failed to load history", "warning")
 	}
 }
 
-loadHistory()
+function exportReport() {
+	window.open("/api/export", "_blank")
+}
 
-let messageCount = 0
+loadHistory();
+
+let messageCount = 0;
+let prevNetSent = 0;
+let prevNetRecv = 0;
 
 const socket = new WebSocket("ws://localhost:8000/ws/metrics");
 
@@ -153,7 +273,8 @@ socket.onmessage = (event) => {
 	
 	messageCount++;
 	if (messageCount % 60 == 0) {
-		loadHistory()
+		const activeRange = document.querySelector(".range-btn.active").dataset.range;
+		loadHistory(activeRange);
 	}
 	
 	let cpuAlertSent = false;
@@ -219,8 +340,9 @@ socket.onmessage = (event) => {
   data.top_processes.forEach((proc) => {
     rows += `<tr>
 			<td>${proc.pid}</td>
-			<td>${proc.name}</td>
+			<td style="cursor:pointer; color:#3498db;" onclick="showProcessInfo(${proc.pid})">${proc.name}</td>
 			<td>${proc.cpu_percent}</td>
+			<td>${proc.threads}</td>
 			<td><span class="kill-btn" onclick="killProcess(${proc.pid})" title="Kill process">🗑️</span></td>
 		</tr>`;
   });
@@ -253,6 +375,22 @@ socket.onmessage = (event) => {
   }
   cpuHistoryChart.data.datasets[0].data = cpuHistory;
   cpuHistoryChart.update();
+	
+	const netSentSpeed = prevNetSent === 0 ? 0 : (data.net_mb_sent * 1024 - prevNetSent);
+	const netRecvSpeed = prevNetRecv === 0 ? 0 : (data.net_mb_recv * 1024 - prevNetRecv);
+	prevNetSent = data.net_mb_sent * 1024;
+	prevNetRecv = data.net_mb_recv * 1024;
+	
+	netSentHistory.push(netSentSpeed);
+	netRecvHistory.push(netRecvSpeed);
+	if (netSentHistory.length > 30) {
+		netSentHistory.shift();
+		netRecvHistory.shift();
+	}
+	
+	networkChart.data.datasets[0].data = netSentHistory;
+	networkChart.data.datasets[1].data = netRecvHistory;
+	networkChart.update();
 
   cpuCoresChart.data.labels = data.cpu_per_core.map((_, i) => `Core ${i}`);
   cpuCoresChart.data.datasets[0].data = data.cpu_per_core;
