@@ -212,6 +212,8 @@ socket.onmessage = (event) => {
   document.getElementById("net-sent-recv").innerHTML =
     `<br>Sent: ${data.net_mb_sent.toFixed(2)} MB
 		<br>Recv: ${data.net_mb_recv.toFixed(2)} MB`;
+	
+	document.getElementById("cpu-uptime").textContent = data.uptime;
 
   let rows = "";
   data.top_processes.forEach((proc) => {
@@ -223,6 +225,27 @@ socket.onmessage = (event) => {
 		</tr>`;
   });
   document.getElementById("processes-table").innerHTML = rows;
+	
+	let connRows = "";
+	data.connections.forEach(conn => {
+		connRows += `<tr>
+			<td>${conn.local}</td>
+			<td>${conn.remote}</td>
+			<td>${conn.status}</td>
+			<td>${conn.pid}</td>
+		</tr>`
+	})
+	document.getElementById("connections-table").innerHTML = connRows;
+	
+	let startupRows = "";
+	data.startup_programs.forEach(prog => {
+		startupRows += `<tr>
+      <td>${prog.name}</td>
+      <td>${prog.source}</td>
+      <td style="font-size:12px; word-break:break-all;">${prog.path}</td>
+    </tr>`;
+	})
+	document.getElementById("startup-table").innerHTML = startupRows;
 
   cpuHistory.push(data.cpu_percent);
   if (cpuHistory.length > 30) {

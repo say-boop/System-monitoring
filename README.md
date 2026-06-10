@@ -101,6 +101,8 @@ poetry run uvicorn app.main:app --reload
 system-monitor/
 ├── app/
 │   ├── main.py              # FastAPI приложение
+│   ├── metrics.py           # Сбор метрик
+│   ├── database.py          # Работа с SQLite
 │   ├── static/
 │   │   ├── css/             # Стили
 │   │   └── js/       			 # JS для динам. обновления

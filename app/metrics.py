@@ -1,4 +1,31 @@
 import psutil
+import time
+import winreg
+
+
+def get_startup_programs():
+	programs = []
+
+	paths = [
+		(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run"),
+		(winreg.HKEY_LOCAL_MACHINE, r"Software\Microsoft\Windows\CurrentVersion\Run")
+	]
+
+	for hive, subkey in paths:
+		try:
+			key = winreg.OpenKey(hive, subkey)
+			for i in range(winreg.QueryInfoKey(key)[1]):
+				name, value, _ = winreg.EnumValue(key, 1)
+				programs.append({
+					"name": name,
+					"path": value,
+					"source": "HKCU" if hive == winreg.HKEY_CURRENT_USER else "HKLM"
+				})
+				winreg.CloseKey(key)
+		except OSError:
+			continue
+
+	return programs
 
 
 def get_metrics_all():
@@ -27,6 +54,27 @@ def get_metrics_all():
 	net = psutil.net_io_counters()
 	net_mb_sent = net.bytes_sent / 1024 / 1024
 	net_mb_recv = net.bytes_recv / 1024 / 1024
+
+	uptime_seconds = int(time.time() - psutil.boot_time())
+	days = uptime_seconds // 86400
+	hours = (uptime_seconds % 86400) // 3600
+	minutes = (uptime_seconds % 3600) // 60
+
+	connections = []
+	try:
+		for conn in psutil.net_connections(kind="inet"):
+			if len(connections) >= 20:
+				break
+			connections.append({
+				"local": f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "-",
+				"remote": f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else "-",
+				"status": conn.status,
+				"pid": conn.pid or "-"
+			})
+	except psutil.AccessDenied:
+		pass
+
+	startup_programs = get_startup_programs()
 
 	proc_objects = []
 	for proc in psutil.process_iter(["pid", "name"]):
@@ -64,5 +112,8 @@ def get_metrics_all():
 		"disks": disks,
 		"net_mb_sent": net_mb_sent,
 		"net_mb_recv": net_mb_recv,
-		"top_processes": top_by_cpu
+		"uptime": f"{days}d {hours}h {minutes}m",
+		"top_processes": top_by_cpu,
+		"connections": connections,
+		"startup_programs": startup_programs
 	}

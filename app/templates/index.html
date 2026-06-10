@@ -15,7 +15,7 @@
 		<div class="metrics-grid">
 			<div class="metrics-top-row">
 				<div class="card">
-					<h3>CPU</h3>
+					<h3>CPU <div class="uptime-cpu-style"><span id="cpu-uptime"></span></div></h3>
 					<div class="card-style"><span id="cpu-value"></span>%</div>
 					<div class="cpu-cores-style"><span id="cpu-cores"></span></div>
 				</div>
@@ -48,6 +48,37 @@
 					</thead>
 					<tbody id="processes-table">
 		
+					</tbody>
+				</table>
+			</div>
+			<div class="table-processes">
+				<h3>Network Connections</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Local</th>
+							<th>Remote</th>
+							<th>Status</th>
+							<th>PID</th>
+						</tr>
+					</thead>
+					<tbody id="connections-table">
+			
+					</tbody>
+				</table>
+			</div>
+			<div class="table-processes">
+				<h3>Startup Programs</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Source</th>
+							<th>Path</th>
+						</tr>
+					</thead>
+					<tbody id="startup-table">
+						
 					</tbody>
 				</table>
 			</div>
