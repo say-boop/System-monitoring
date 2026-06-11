@@ -303,13 +303,16 @@ socket.onmessage = (event) => {
   document.getElementById("memory-percent").textContent = data.memory_percent;
   document.getElementById("memory-details").innerHTML =
     `<br>Available: ${data.memory_available}GB
-	<br>Total: ${data.memory_total}GB`;
+		<br>Total: ${data.memory_total}GB`;
 
   let disksHtml = "";
 	data.disks.forEach(disk => {
 		let statusClass = "";
 		if (disk.percent > 95) statusClass = "danger";
 		else if (disk.percent > 85) statusClass = "warning";
+		
+		let readSpeed = typeof disk.disk_io_read_mb !== "undefined" ? disk.disk_io_read_mb : 0;
+		let writeSpeed = typeof disk.disk_io_write_mb !== "undefined" ? disk.disk_io_write_mb : 0;
 		
 		disksHtml += `
       <div class="disk-item ${statusClass}">
@@ -324,6 +327,14 @@ socket.onmessage = (event) => {
           <div>Free: ${disk.free} GB</div>
           <div>Total: ${disk.total} GB</div>
         </div>
+				<div class="disk-io-box">
+					<span>Read:</span>
+					<span class="disk-io-val read">${Number(readSpeed).toFixed(1)} MB/s</span>
+				</div>
+				<div class="disk-io-box">
+					<span>Write:</span>
+					<span class="disk-io-val write">${Number(writeSpeed).toFixed(1)} MB/s</span>
+				</div>
       </div>
     `;
 	})
@@ -335,6 +346,98 @@ socket.onmessage = (event) => {
 		<br>Recv: ${data.net_mb_recv.toFixed(2)} MB`;
 	
 	document.getElementById("cpu-uptime").textContent = data.uptime;
+	
+	if (data.swap) {
+		document.getElementById("pagefile-percent").textContent = data.swap.percent;
+		document.getElementById("pagefile-details").innerHTML = `
+			<br>Available: ${data.swap.free_gb} GB<br>
+			Total: ${data.swap.total_gb} GB
+		`
+	}
+	
+	const gpuContainer = document.getElementById("gpu-info");
+	if (gpuContainer) {
+		
+		if (data.gpus && data.gpus.length > 0) {
+			let gpusHtml = "";
+			
+			data.gpus.forEach(gpu => {
+				const vramPercent = ((gpu.memory_gpu_used_mb / gpu.memory_gpu_total_mb) * 100).toFixed(1);
+				
+				gpusHtml += `
+					<div class="gpu-name">${gpu.name}</div>
+      		<div class="gpu-meta">
+        		Temp: ${gpu.temp}°C | Load: ${gpu.load}%
+      		</div>
+      		<div class="gpu-vram-container">
+        		<div class="gpu-vram-header">
+         	  	<span>VRAM Usage</span>
+          		<span>${gpu.memory_gpu_used_mb} / ${gpu.memory_gpu_total_mb} MB (${vramPercent}%)</span>
+        		</div>
+        		<div class="gpu-progress-bar">
+          		<div class="gpu-progress-fill" style="width: ${vramPercent}%"></div>
+        		</div>
+      		</div>
+				`;
+			});
+			gpuContainer.innerHTML = gpusHtml;
+		}
+	}
+	
+	const batteryContainer = document.getElementById("battery-header-container");
+	if (batteryContainer) {
+		if (data.battery) {
+			batteryContainer.classList = "🔋";
+			
+			let icon = "🔋";
+			if (data.battery.percent < 20) icon = "🪫";
+			if (data.battery.plugged) icon = "⚡";
+			
+			let text = `${icon} ${data.battery.percent}`;
+			
+			if (data.battery.plugged) {
+				batteryContainer.classList.add("battery-plugged");
+				text += " (Charging)";
+			} else if (data.battery.time_left) {
+				let hours = Math.floor(data.battery.time_left / 60);
+				let min = Math.round(data.battery.time_left % 60);
+				text += ` (${hours}h ${min}m left)`;
+			}
+			
+			batteryContainer.innerText = text;
+		} else {
+			batteryContainer.className = "battery-hidden";
+		}
+	}
+	
+	const healthContainer = document.getElementById("disks-health-info");
+	if (healthContainer && data.disks_health) {
+		let healthHtml = "";
+		
+		data.disks_health.forEach(disk => {
+			let statusClass = "ok";
+			let currentStatus = disk.status ? disk.status.toLowerCase() : "";
+			
+			if (currentStatus.includes("warning") || currentStatus.includes("caution")) {
+				statusClass = "warning";
+			} else if (currentStatus.includes("bad") || currentStatus.includes("critical") || currentStatus.includes("error")) {
+				statusClass = "critical";
+			}
+			
+			healthHtml += `
+        <div class="health-item">
+          <div class="health-model-block">
+            <span class="health-model">${disk.model}</span>
+            <span class="health-size">Size: ${disk.size_gb} GB</span>
+          </div>
+          <div class="health-status-badge ${statusClass}">
+            ${disk.status}
+          </div>
+        </div>
+      `;
+		});
+		healthContainer.innerHTML = healthHtml
+	}
 
   let rows = "";
   data.top_processes.forEach((proc) => {

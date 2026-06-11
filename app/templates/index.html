@@ -10,6 +10,7 @@
 <body>
 	<header class="main-header">
 		<h1>System Monitoring</h1>
+		<div id="battery-header-container" class="battery-hidden"></div>
 		<button class="button-export" onclick="exportReport()">📄 Export Report</button>
 	</header>
 	<main class="dashboard-container">
@@ -23,18 +24,44 @@
 				<div class="metrics-right-subrow">
 					<div class="card">
 						<h3>RAM</h3>
-						<div class="card-style"><span id="memory-percent"></span>%</div>
-						<div class="mem-details-style"><span id="memory-details"></span></div>
+						<div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 32px;">
+							<div style="flex: 1; display: flex; flex-direction: column;">
+								<div
+									style="font-size: 0.75rem; font-weight: 600; color: #8E8E93; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">
+									PHYSICAL</div>
+								<div style="font-size: 2.4rem; font-weight: 700; color: #0A84FF; margin: 0; line-height: 1.1; padding: 4px 0;">
+									<span id="memory-percent"></span>%</div>
+								<div class="mem-details-style" style="font-size: 0.85rem; color: #8E8E93; line-height: 1.5; margin-top: 8px;">
+									<span id="memory-details"></span></div>
+							</div>
+							<div style="flex: 1; display: flex; flex-direction: column;">
+								<div
+									style="font-size: 0.75rem; font-weight: 600; color: #8E8E93; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">
+									PAGEFILE</div>
+								<div style="font-size: 2.4rem; font-weight: 700; color: #BF5AF2; margin: 0; line-height: 1.1; padding: 4px 0;">
+									<span id="pagefile-percent"></span>%</div>
+								<div class="pagefile-details-style" id="pagefile-details"
+									style="font-size: 0.85rem; color: #8E8E93; line-height: 1.5; margin-top: 8px;"></div>
+							</div>
+						</div>
 					</div>
 					<div class="card">
 						<h3>Network</h3>
 						<div class="network-style"><span id="net-sent-recv"></span></div>
 					</div>
+					<div class="card">
+						<h3>GPU</h3>
+						<div id="gpu-info"></div>
 					</div>
 				</div>
+			</div>
 			<div class="card">
 				<h3>Disks</h3>
 				<div id="disk-details"></div>
+			</div>
+			<div class="card">
+				<h3>Disks Health</h3>
+				<div id="disks-health-info"></div>
 			</div>
 			<div class="table-processes">
 				<h3>Top 5 Processes</h3>
