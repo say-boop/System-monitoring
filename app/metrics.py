@@ -197,6 +197,37 @@ def get_pagefile():
 		"free_gb": round(swap.free / 1024**3, 2),
 		"percent": swap.percent
 	}
+
+
+def get_listening_ports():
+	result_conn_list = []
+	try:
+		conn_list = psutil.net_connections(kind="inet")
+
+		for conn in conn_list:
+			if len(result_conn_list) > 50:
+				break
+			
+			if conn.status and "LISTEN" in conn.status:
+				pid = conn.pid
+				name = "N/A"
+				
+				if pid:
+					try:
+						name = psutil.Process(pid).name()
+					except (psutil.NoSuchProcess, psutil.AccessDenied):
+						name = "N/A"
+
+				result_conn_list.append({
+					"port": conn.laddr.port if conn.laddr else "-",
+					"ip": conn.laddr.ip if conn.laddr else "-",
+					"pid": pid or "N/A",
+					"name": name
+				})
+	except psutil.AccessDenied:
+		pass
+
+	return result_conn_list
 			
 
 def get_metrics_all():
@@ -282,5 +313,6 @@ def get_metrics_all():
 		"gpus": get_gpu_info(),
 		"disks_health": get_disk_health(),
 		"battery": get_battery(),
-		"swap": get_pagefile()
+		"swap": get_pagefile(),
+		"listening_ports": get_listening_ports()
 	}
