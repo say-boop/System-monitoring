@@ -1,3 +1,5 @@
+from datetime import datetime
+import win32evtlog
 import psutil
 import time
 import subprocess
@@ -5,7 +7,6 @@ import winreg
 import wmi
 import os
 import ctypes
-import string
 
 
 _disk_io_cache = {}
@@ -228,6 +229,60 @@ def get_listening_ports():
 		pass
 
 	return result_conn_list
+
+
+def get_active_users():
+	result_list_users = []
+
+	users = psutil.users()
+
+	for user in users:
+		started = datetime.fromtimestamp(user.started).strftime("%Y-%m-%d %H:%M")
+		pid = user.pid or "N/A"
+
+		result_list_users.append({
+			"name": user.name,
+			"terminal": user.terminal,
+			"host": user.host,
+			"started": started,
+			"pid": pid
+		})
+
+	return result_list_users
+
+
+def get_event_log():
+	result_list_log = []
+	
+	try:
+		hand = win32evtlog.OpenEventLog(None, "System")
+		flags = win32evtlog.EVENTLOG_BACKWARDS_READ | win32evtlog.EVENTLOG_SEQUENTIAL_READ
+
+		while len(result_list_log) < 20:
+			events = win32evtlog.ReadEventLog(hand, flags, 0)
+			if not events:
+				break
+
+			for event in events:
+				if len(result_list_log) >= 20:
+					break
+
+				if event.EventType in (win32evtlog.EVENTLOG_ERROR_TYPE, win32evtlog.EVENTLOG_WARNING_TYPE):
+					type_str = "Error" if event.EventType == win32evtlog.EVENTLOG_ERROR_TYPE else "Warning"
+
+					result_list_log.append({
+						"time": str(event.TimeGenerated.Format()),
+						"source": str(event.SourceName),
+						"event_id": event.EventID,
+						"type": type_str,
+						"message": str(event.StringInserts)[:200] if event.StringInserts else "N/A"
+					})
+
+		win32evtlog.CloseEventLog(hand)
+	except Exception:
+		pass
+
+	return result_list_log
 			
 
 def get_metrics_all():
@@ -314,5 +369,7 @@ def get_metrics_all():
 		"disks_health": get_disk_health(),
 		"battery": get_battery(),
 		"swap": get_pagefile(),
-		"listening_ports": get_listening_ports()
+		"listening_ports": get_listening_ports(),
+		"active_users": get_active_users(),
+		"event_logs": get_event_log()
 	}

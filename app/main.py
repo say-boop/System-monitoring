@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPExcept
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from datetime import datetime
 import logging
 import asyncio
@@ -13,6 +14,19 @@ from app.metrics import get_metrics_all
 
 
 app = FastAPI()
+
+
+triggers = {
+	"cpu": 90,
+	"memory": 90,
+	"enabled": True
+}
+
+class TriggerSettings(BaseModel):
+	cpu: int = 90
+	memory: int = 90
+	enabled: bool = True
+
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -167,6 +181,20 @@ def export_report():
 	return HTMLResponse(content=html, headers={
 		"Content-Disposition": f"attachment; filename=system_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 	})
+
+
+@app.get("/api/triggers")
+def get_triggers():
+	return triggers
+
+
+@app.put("/api/triggers")
+def update_triggers(settings: TriggerSettings):
+	triggers["cpu"] = settings.cpu
+	triggers["memory"] = settings.memory
+	triggers["enabled"] = settings.enabled
+
+	return triggers
 	
 
 @app.websocket("/ws/metrics")
@@ -177,6 +205,20 @@ async def websocket_metrics(websocket: WebSocket):
 	try:
 		while True:
 			content = get_metrics()
+
+			content["alert_cpu"] = False
+			content["alert_memory"] = False
+			content["cpu_threshold"] = triggers["cpu"]
+			content["memory_threshold"] = triggers["memory"]
+
+			if triggers["enabled"]:
+				if content["cpu_percent"] > triggers["cpu"]:
+					content["alert_cpu"] = True
+					logger.warning(f"CPU threshold exceeded: {content["cpu_percent"]}% > {triggers["cpu"]}%")
+
+				if content["memory_percent"] > triggers["memory"]:
+					content["alert_memory"] = True
+					logger.warning(f"Memory threshold exceeded: {content["memory_percent"]}% > {triggers["memory"]}%")
 
 			if (datetime.now() - last_save_time).seconds >= 60:
 				save_metrics(content)

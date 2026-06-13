@@ -47,11 +47,11 @@ const networkChart = new Chart(ctxNetwork, {
       },
     ],
   },
-	options: {
-		scales: {
-			y: {min: 0}
-		}
-	}
+  options: {
+    scales: {
+      y: { min: 0 },
+    },
+  },
 });
 
 const ctxCores = document.getElementById("cpu-cores-chart").getContext("2d");
@@ -105,16 +105,16 @@ const historyChart = new Chart(ctxHistory, {
   },
 });
 
-document.querySelectorAll(".range-btn").forEach(function(btn) {
-	btn.addEventListener("click", function() {
-		document.querySelectorAll(".range-btn").forEach(function(otherBtn) {
-			otherBtn.classList.remove("active");
-		});
-		this.classList.add("active");
-		var range = this.getAttribute("data-range");
-		loadHistory(range)
-	})
-})
+document.querySelectorAll(".range-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    document.querySelectorAll(".range-btn").forEach(function (otherBtn) {
+      otherBtn.classList.remove("active");
+    });
+    this.classList.add("active");
+    var range = this.getAttribute("data-range");
+    loadHistory(range);
+  });
+});
 
 function showNotification(text, type = "info", duration = 4000) {
   if (type == "access") type = "success";
@@ -130,19 +130,24 @@ function showNotification(text, type = "info", duration = 4000) {
   toast.className = `toast-notification ${type}`;
   toast.innerHTML = text;
 
-  container.prepend(toast)
+  container.prepend(toast);
 	
-	let isRemoving = false
+	requestAnimationFrame(() => {
+		toast.classList.add("active");
+	});
+
+  let isRemoving = false;
 
   const removeToast = () => {
     if (isRemoving) return;
-		isRemoving = true;
+    isRemoving = true;
 		
-		toast.classList.add("fade-out");
-		
-		setTimeout(() => {
-			toast.remove();
-		}, 400)
+		toast.classList.remove("active");
+    toast.classList.add("fade-out");
+
+    setTimeout(() => {
+      toast.remove();
+    }, 400);
   };
 
   toast.addEventListener("click", removeToast);
@@ -158,7 +163,7 @@ async function killProcess(pid) {
     if (response.ok) {
       showNotification("Process killed", "access");
     } else {
-      showNotification(`Failed to kill process ${pid}`, "warning")
+      showNotification(`Failed to kill process ${pid}`, "warning");
     }
   } catch (error) {
     console.error("Error:", error);
@@ -166,16 +171,16 @@ async function killProcess(pid) {
 }
 
 async function showProcessInfo(pid) {
-	try {
-		const response = await fetch(`/api/process/${pid}/info`);
-		if (!response.ok) {
-			showNotification("Failed to get process info", "warning");
-			return;
-		}
-		const info = await response.json();
-		
-		const content = document.getElementById("process-detail-content");
-		content.innerHTML = `
+  try {
+    const response = await fetch(`/api/process/${pid}/info`);
+    if (!response.ok) {
+      showNotification("Failed to get process info", "warning");
+      return;
+    }
+    const info = await response.json();
+
+    const content = document.getElementById("process-detail-content");
+    content.innerHTML = `
     	<div class="detail-row">
         <span class="detail-label">Name:</span>
         <span class="detail-value process-name">${info.name}</span>
@@ -213,51 +218,51 @@ async function showProcessInfo(pid) {
         <span class="detail-value process-path">${info.exe}</span>
     	</div>
 		`;
-		
-		document.getElementById("process-detail").style.display = "block";
-	} catch (error) {
-		console.error("Error:", error)
-	}
+
+    document.getElementById("process-detail").style.display = "block";
+  } catch (error) {
+    console.error("Error:", error);
+  }
 }
 
 async function loadHistory(range = "hour") {
-	console.log("Loading history for range:", range);
-	try {
-		const response = await fetch("/api/history");
-		const data = await response.json();
-		
-		data.reverse();
-		
-		historyChart.data.labels = data.map(row => {
-			const d = new Date(row.timestamp);
-			const hh = String(d.getHours()).padStart(2, "0");
-			const mm = String(d.getMinutes()).padStart(2, "0");
-			if (range === "day") {
-				const dd = String(d.getDate()).padStart(2, "0");
-				const mon = String(d.getMonth() + 1).padStart(2, "0");
-				return `${dd}.${mon} ${hh}:${mm}`;
-			}
-			return `${hh}:${mm}`;
-		});
-		historyChart.data.datasets[0].data = data.map(row => row.cpu_percent);
-		historyChart.data.datasets[1].data = data.map(row => row.memory_percent);
-		historyChart.data.datasets[2].data = data.map(row => row.disk_percent);
-		
-		historyChart.update()
-		
-		const title = document.getElementById("history-title");
-		if (range === "day") {
-			title.textContent = "History (last 24 hours)";
-		} else {
-			title.textContent = "History (last 60 minutes)";
-		}
-	} catch (error) {
-		showNotification("Failed to load history", "warning")
-	}
+  console.log("Loading history for range:", range);
+  try {
+    const response = await fetch("/api/history");
+    const data = await response.json();
+
+    data.reverse();
+
+    historyChart.data.labels = data.map((row) => {
+      const d = new Date(row.timestamp);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      if (range === "day") {
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mon = String(d.getMonth() + 1).padStart(2, "0");
+        return `${dd}.${mon} ${hh}:${mm}`;
+      }
+      return `${hh}:${mm}`;
+    });
+    historyChart.data.datasets[0].data = data.map((row) => row.cpu_percent);
+    historyChart.data.datasets[1].data = data.map((row) => row.memory_percent);
+    historyChart.data.datasets[2].data = data.map((row) => row.disk_percent);
+
+    historyChart.update();
+
+    const title = document.getElementById("history-title");
+    if (range === "day") {
+      title.textContent = "History (last 24 hours)";
+    } else {
+      title.textContent = "History (last 60 minutes)";
+    }
+  } catch (error) {
+    showNotification("Failed to load history", "warning");
+  }
 }
 
 function exportReport() {
-	window.open("/api/export", "_blank")
+  window.open("/api/export", "_blank");
 }
 
 loadHistory();
@@ -270,25 +275,29 @@ const socket = new WebSocket("ws://localhost:8000/ws/metrics");
 
 socket.onmessage = (event) => {
   const data = JSON.parse(event.data);
-	
-	messageCount++;
-	if (messageCount % 60 == 0) {
-		const activeRange = document.querySelector(".range-btn.active").dataset.range;
-		loadHistory(activeRange);
-	}
-	
-	let cpuAlertSent = false;
-	let memoryAlertSent = false;
-	
-	if (data.cpu_percent > 90 && !cpuAlertSent) {
-		showNotification(`⚠️ High CPU usage: ${data.cpu_percent}%`, "warning");
-		cpuAlertSent = true
-	} else if (data.cpu_percent < 80) {
-		cpuAlertSent = false
-	}
-	
-	if (data.memory_percent > 90 && !memoryAlertSent) {
-    showNotification(`⚠️ High memory usage: ${data.memory_percent}%`, "warning");
+
+  messageCount++;
+  if (messageCount % 60 == 0) {
+    const activeRange =
+      document.querySelector(".range-btn.active").dataset.range;
+    loadHistory(activeRange);
+  }
+
+  let cpuAlertSent = false;
+  let memoryAlertSent = false;
+
+  if (data.cpu_percent > 90 && !cpuAlertSent) {
+    showNotification(`⚠️ High CPU usage: ${data.cpu_percent}%`, "warning");
+    cpuAlertSent = true;
+  } else if (data.cpu_percent < 80) {
+    cpuAlertSent = false;
+  }
+
+  if (data.memory_percent > 90 && !memoryAlertSent) {
+    showNotification(
+      `⚠️ High memory usage: ${data.memory_percent}%`,
+      "warning",
+    );
     memoryAlertSent = true;
   } else if (data.memory_percent < 80) {
     memoryAlertSent = false;
@@ -306,15 +315,17 @@ socket.onmessage = (event) => {
 		<br>Total: ${data.memory_total}GB`;
 
   let disksHtml = "";
-	data.disks.forEach(disk => {
-		let statusClass = "";
-		if (disk.percent > 95) statusClass = "danger";
-		else if (disk.percent > 85) statusClass = "warning";
-		
-		let readSpeed = typeof disk.disk_io_read_mb !== "undefined" ? disk.disk_io_read_mb : 0;
-		let writeSpeed = typeof disk.disk_io_write_mb !== "undefined" ? disk.disk_io_write_mb : 0;
-		
-		disksHtml += `
+  data.disks.forEach((disk) => {
+    let statusClass = "";
+    if (disk.percent > 95) statusClass = "danger";
+    else if (disk.percent > 85) statusClass = "warning";
+
+    let readSpeed =
+      typeof disk.disk_io_read_mb !== "undefined" ? disk.disk_io_read_mb : 0;
+    let writeSpeed =
+      typeof disk.disk_io_write_mb !== "undefined" ? disk.disk_io_write_mb : 0;
+
+    disksHtml += `
       <div class="disk-item ${statusClass}">
         <div class="disk-item-header">
           <span>${disk.device}</span>
@@ -337,34 +348,54 @@ socket.onmessage = (event) => {
 				</div>
       </div>
     `;
-	})
-	document.getElementById("disk-details").innerHTML =
+  });
+  document.getElementById("disk-details").innerHTML =
     `<div class="card-disks-container">${disksHtml}</div>`;
 
   document.getElementById("net-sent-recv").innerHTML =
     `<br>Sent: ${data.net_mb_sent.toFixed(2)} MB
 		<br>Recv: ${data.net_mb_recv.toFixed(2)} MB`;
-	
-	document.getElementById("cpu-uptime").textContent = data.uptime;
-	
-	if (data.swap) {
-		document.getElementById("pagefile-percent").textContent = data.swap.percent;
-		document.getElementById("pagefile-details").innerHTML = `
+
+  document.getElementById("cpu-uptime").textContent = data.uptime;
+
+  if (data.swap) {
+    document.getElementById("pagefile-percent").textContent = data.swap.percent;
+    document.getElementById("pagefile-details").innerHTML = `
 			<br>Available: ${data.swap.free_gb} GB<br>
 			Total: ${data.swap.total_gb} GB
-		`
-	}
-	
-	const gpuContainer = document.getElementById("gpu-info");
-	if (gpuContainer) {
-		
-		if (data.gpus && data.gpus.length > 0) {
-			let gpusHtml = "";
-			
-			data.gpus.forEach(gpu => {
-				const vramPercent = ((gpu.memory_gpu_used_mb / gpu.memory_gpu_total_mb) * 100).toFixed(1);
-				
-				gpusHtml += `
+		`;
+  }
+
+  const usersTable = document.getElementById("active-users-table");
+  if (usersTable && data.active_users) {
+    let usersHtml = "";
+
+    data.active_users.forEach((user) => {
+      const name = user.name || "Unknown";
+      const terminal = user.terminal || "N/A";
+      const started = user.started || "-";
+
+      usersHtml += `<tr>
+				<td><span class="user-name-badge">👤 ${user.name}</span></td>
+				<td><span class="user-terminal-badge">${terminal}</span></td>
+				<td>${user.started}</td>
+			</tr>`;
+    });
+    usersTable.innerHTML = usersHtml;
+  }
+
+  const gpuContainer = document.getElementById("gpu-info");
+  if (gpuContainer) {
+    if (data.gpus && data.gpus.length > 0) {
+      let gpusHtml = "";
+
+      data.gpus.forEach((gpu) => {
+        const vramPercent = (
+          (gpu.memory_gpu_used_mb / gpu.memory_gpu_total_mb) *
+          100
+        ).toFixed(1);
+
+        gpusHtml += `
 					<div class="gpu-name">${gpu.name}</div>
       		<div class="gpu-meta">
         		Temp: ${gpu.temp}°C | Load: ${gpu.load}%
@@ -379,52 +410,59 @@ socket.onmessage = (event) => {
         		</div>
       		</div>
 				`;
-			});
-			gpuContainer.innerHTML = gpusHtml;
-		}
-	}
-	
-	const batteryContainer = document.getElementById("battery-header-container");
-	if (batteryContainer) {
-		if (data.battery) {
-			batteryContainer.classList = "🔋";
-			
-			let icon = "🔋";
-			if (data.battery.percent < 20) icon = "🪫";
-			if (data.battery.plugged) icon = "⚡";
-			
-			let text = `${icon} ${data.battery.percent}`;
-			
-			if (data.battery.plugged) {
-				batteryContainer.classList.add("battery-plugged");
-				text += " (Charging)";
-			} else if (data.battery.time_left) {
-				let hours = Math.floor(data.battery.time_left / 60);
-				let min = Math.round(data.battery.time_left % 60);
-				text += ` (${hours}h ${min}m left)`;
-			}
-			
-			batteryContainer.innerText = text;
-		} else {
-			batteryContainer.className = "battery-hidden";
-		}
-	}
-	
-	const healthContainer = document.getElementById("disks-health-info");
-	if (healthContainer && data.disks_health) {
-		let healthHtml = "";
-		
-		data.disks_health.forEach(disk => {
-			let statusClass = "ok";
-			let currentStatus = disk.status ? disk.status.toLowerCase() : "";
-			
-			if (currentStatus.includes("warning") || currentStatus.includes("caution")) {
-				statusClass = "warning";
-			} else if (currentStatus.includes("bad") || currentStatus.includes("critical") || currentStatus.includes("error")) {
-				statusClass = "critical";
-			}
-			
-			healthHtml += `
+      });
+      gpuContainer.innerHTML = gpusHtml;
+    }
+  }
+
+  const batteryContainer = document.getElementById("battery-header-container");
+  if (batteryContainer) {
+    if (data.battery) {
+      batteryContainer.classList = "🔋";
+
+      let icon = "🔋";
+      if (data.battery.percent < 20) icon = "🪫";
+      if (data.battery.plugged) icon = "⚡";
+
+      let text = `${icon} ${data.battery.percent}`;
+
+      if (data.battery.plugged) {
+        batteryContainer.classList.add("battery-plugged");
+        text += " (Charging)";
+      } else if (data.battery.time_left) {
+        let hours = Math.floor(data.battery.time_left / 60);
+        let min = Math.round(data.battery.time_left % 60);
+        text += ` (${hours}h ${min}m left)`;
+      }
+
+      batteryContainer.innerText = text;
+    } else {
+      batteryContainer.className = "battery-hidden";
+    }
+  }
+
+  const healthContainer = document.getElementById("disks-health-info");
+  if (healthContainer && data.disks_health) {
+    let healthHtml = "";
+
+    data.disks_health.forEach((disk) => {
+      let statusClass = "ok";
+      let currentStatus = disk.status ? disk.status.toLowerCase() : "";
+
+      if (
+        currentStatus.includes("warning") ||
+        currentStatus.includes("caution")
+      ) {
+        statusClass = "warning";
+      } else if (
+        currentStatus.includes("bad") ||
+        currentStatus.includes("critical") ||
+        currentStatus.includes("error")
+      ) {
+        statusClass = "critical";
+      }
+
+      healthHtml += `
         <div class="health-item">
           <div class="health-model-block">
             <span class="health-model">${disk.model}</span>
@@ -435,8 +473,67 @@ socket.onmessage = (event) => {
           </div>
         </div>
       `;
-		});
-		healthContainer.innerHTML = healthHtml
+    });
+    healthContainer.innerHTML = healthHtml;
+  }
+
+  const portsTable = document.getElementById("ports-table");
+  if (portsTable && data.listening_ports) {
+    let portsHtml = "";
+
+    data.listening_ports.forEach((conn) => {
+      const port = conn.port || "-";
+      const ip = conn.ip || "*.*.*.*";
+      const pid = conn.pid || "-";
+      const processName = conn.name || "Unknown";
+
+      portsHtml += `<tr>
+				<td><span class="net-port-badge">${conn.port}</span></td>
+				<td><span class="net-ip-style">${conn.ip}</span></td>
+				<td>${conn.pid}</td>
+				<td><div class="net-process-name" title="${conn.name}">${conn.name}</div></td>
+			<tr>`;
+    });
+    portsTable.innerHTML = portsHtml;
+  }
+
+  const eventsTable = document.getElementById("events-table");
+  if (eventsTable && data.event_logs) {
+    let eventsHtml = "";
+
+    data.event_logs.forEach((evt) => {
+      const time = evt.time || "-";
+      const source = evt.source || "Unknown";
+      const id = evt.event_id || "0";
+      const type = (evt.type || "Warning").toLowerCase();
+      const message = evt.message || "";
+
+      let badgeClass = "warning";
+      let rowClass = "row-warning";
+
+      if (type.includes("error") || type.includes("critical")) {
+        badgeClass = "error";
+        rowClass = "row-error";
+      }
+
+      eventsHtml += `<tr class="${rowClass}">
+				<td>${time}</td>
+				<td title="${source}">${source}</td>
+				<td>${id}</td>
+				<td><span class="event-badge ${badgeClass}">${type}</span></td>
+				<td><div class="event-msg-truncated" title="${message}">${message}</div></td>
+			</tr>`;
+    });
+
+    eventsTable.innerHTML = eventsHtml;
+  }
+	
+	if (data.alert_cpu) {
+		showNotification(`⚠️ CPU: ${data.cpu_percent}% threshold: ${data.cpu_threshold}`, "danger");
+	}
+	
+	if (data.alert_memory) {
+		showNotification(`⚠️ Memory: ${data.memory_percent}% threshold: ${data.memory_threshold}`, "danger");
 	}
 
   let rows = "";
@@ -450,27 +547,27 @@ socket.onmessage = (event) => {
 		</tr>`;
   });
   document.getElementById("processes-table").innerHTML = rows;
-	
-	let connRows = "";
-	data.connections.forEach(conn => {
-		connRows += `<tr>
+
+  let connRows = "";
+  data.connections.forEach((conn) => {
+    connRows += `<tr>
 			<td>${conn.local}</td>
 			<td>${conn.remote}</td>
 			<td>${conn.status}</td>
 			<td>${conn.pid}</td>
-		</tr>`
-	})
-	document.getElementById("connections-table").innerHTML = connRows;
-	
-	let startupRows = "";
-	data.startup_programs.forEach(prog => {
-		startupRows += `<tr>
+		</tr>`;
+  });
+  document.getElementById("connections-table").innerHTML = connRows;
+
+  let startupRows = "";
+  data.startup_programs.forEach((prog) => {
+    startupRows += `<tr>
       <td>${prog.name}</td>
       <td>${prog.source}</td>
       <td style="font-size:12px; word-break:break-all;">${prog.path}</td>
     </tr>`;
-	})
-	document.getElementById("startup-table").innerHTML = startupRows;
+  });
+  document.getElementById("startup-table").innerHTML = startupRows;
 
   cpuHistory.push(data.cpu_percent);
   if (cpuHistory.length > 30) {
@@ -478,30 +575,34 @@ socket.onmessage = (event) => {
   }
   cpuHistoryChart.data.datasets[0].data = cpuHistory;
   cpuHistoryChart.update();
-	
-	const netSentSpeed = prevNetSent === 0 ? 0 : (data.net_mb_sent * 1024 - prevNetSent);
-	const netRecvSpeed = prevNetRecv === 0 ? 0 : (data.net_mb_recv * 1024 - prevNetRecv);
-	prevNetSent = data.net_mb_sent * 1024;
-	prevNetRecv = data.net_mb_recv * 1024;
-	
-	netSentHistory.push(netSentSpeed);
-	netRecvHistory.push(netRecvSpeed);
-	if (netSentHistory.length > 30) {
-		netSentHistory.shift();
-		netRecvHistory.shift();
-	}
-	
-	networkChart.data.datasets[0].data = netSentHistory;
-	networkChart.data.datasets[1].data = netRecvHistory;
-	networkChart.update();
+
+  const netSentSpeed =
+    prevNetSent === 0 ? 0 : data.net_mb_sent * 1024 - prevNetSent;
+  const netRecvSpeed =
+    prevNetRecv === 0 ? 0 : data.net_mb_recv * 1024 - prevNetRecv;
+  prevNetSent = data.net_mb_sent * 1024;
+  prevNetRecv = data.net_mb_recv * 1024;
+
+  netSentHistory.push(netSentSpeed);
+  netRecvHistory.push(netRecvSpeed);
+  if (netSentHistory.length > 30) {
+    netSentHistory.shift();
+    netRecvHistory.shift();
+  }
+
+  networkChart.data.datasets[0].data = netSentHistory;
+  networkChart.data.datasets[1].data = netRecvHistory;
+  networkChart.update();
 
   cpuCoresChart.data.labels = data.cpu_per_core.map((_, i) => `Core ${i}`);
   cpuCoresChart.data.datasets[0].data = data.cpu_per_core;
   cpuCoresChart.update();
 };
 
+document.addEventListener("DOMContentLoaded", loadCurrentTriggers);
+
 socket.onerror = (error) => {
-  showNotification(`${error}`, "error")
+  showNotification(`${error}`, "error");
 };
 
 socket.onclose = (event) => {
@@ -509,3 +610,65 @@ socket.onclose = (event) => {
     `Соединение закрыто. Код: ${event.code}, Причина: ${event.reason}`,
   );
 };
+
+async function saveTriggers() {
+  const enabled = document.getElementById("trigger-enabled").checked;
+  const cpuValue = parseInt(document.getElementById("trigger-cpu").value);
+  const memoryValue = parseInt(document.getElementById("trigger-memory").value);
+
+  const triggerPayload = {
+    cpu: cpuValue,
+    memory: memoryValue,
+    enabled: enabled,
+  };
+
+  try {
+    const response = await fetch("/api/triggers", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(triggerPayload),
+    });
+
+    if (response.ok) {
+      document.getElementById("triggers-modal").classList.remove("active");
+      showNotification("Trigger settings saved successfully!", "access");
+    } else {
+      showNotification(
+        `Failed to save settings: ${response.statusText}`,
+        "warning",
+      );
+    }
+  } catch (error) {
+    console.error("Error saving triggers:", error);
+    showNotification("Network error. Could not connect to API.", "warning");
+  }
+}
+
+async function loadCurrentTriggers() {
+  try {
+    const response = await fetch("/api/triggers", {
+      method: "GET",
+    });
+
+    if (response.ok) {
+      const currentTriggers = await response.json();
+
+      if (currentTriggers) {
+        document.getElementById("trigger-enabled").checked =
+          currentTriggers.enabled ?? true;
+        document.getElementById("trigger-cpu").value =
+          currentTriggers.cpu ?? 90;
+        document.getElementById("cpu-val-display").textContent =
+          `${currentTriggers.cpu ?? 90}%`;
+        document.getElementById("trigger-memory").value =
+          currentTriggers.memory ?? 90;
+        document.getElementById("memory-val-display").textContent =
+          `${currentTriggers.memory ?? 90}%`;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading initial triggers:", error);
+  }
+}

@@ -11,7 +11,10 @@
 	<header class="main-header">
 		<h1>System Monitoring</h1>
 		<div id="battery-header-container" class="battery-hidden"></div>
-		<button class="button-export" onclick="exportReport()">📄 Export Report</button>
+		<div class="header-actions-group">
+			<button class="button-export" onclick="exportReport()">📄 Export Report</button>
+			<button class="button-export" onclick="document.getElementById('triggers-modal').classList.add('active')">⚙️ Settings Triggers</button>
+		</div>
 	</header>
 	<main class="dashboard-container">
 		<div class="metrics-grid">
@@ -63,6 +66,21 @@
 				<h3>Disks Health</h3>
 				<div id="disks-health-info"></div>
 			</div>
+			<div class="table-processes table-active-users">
+				<h3>Active Users</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Terminal</th>
+							<th>Started</th>
+						</tr>
+					</thead>
+					<tbody id="active-users-table">
+			
+					</tbody>
+				</table>
+			</div>
 			<div class="table-processes">
 				<h3>Top 5 Processes</h3>
 				<table>
@@ -101,6 +119,22 @@
 					</tbody>
 				</table>
 			</div>
+			<div class="table-processes table-network-connections">
+				<h3>Listening Ports</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Port</th>
+							<th>IP</th>
+							<th>PID</th>
+							<th>Process</th>
+						</tr>
+					</thead>
+					<tbody id="ports-table">
+			
+					</tbody>
+				</table>
+			</div>
 			<div class="table-processes">
 				<h3>Startup Programs</h3>
 				<table>
@@ -113,6 +147,23 @@
 					</thead>
 					<tbody id="startup-table">
 						
+					</tbody>
+				</table>
+			</div>
+			<div class="table-processes table-event-log">
+				<h3>Event Log (Errors & Warnings)</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Time</th>
+							<th>Source</th>
+							<th>ID</th>
+							<th>Type</th>
+							<th>Message</th>
+						</tr>
+					</thead>
+					<tbody id="events-table">
+			
 					</tbody>
 				</table>
 			</div>
@@ -132,6 +183,47 @@
 			<canvas id="history-chart"></canvas>
 		</div>
 	</main>
+	<div id="triggers-modal" class="modal-overlay">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Trigger Settings</h2>
+				<span class="modal-close" style="cursor:pointer;"
+					onclick="document.getElementById('triggers-modal').classList.remove('active')">✕</span>
+			</div>
+			<div class="modal-body">
+				<div class="trigger-field-row">
+					<label>Enable Notifications</label>
+					<label class="switch-toggle">
+						<input type="checkbox" id="trigger-enabled">
+						<span class="slider-toggle"></span>
+					</label>
+				</div>
+	
+				<div class="trigger-field-group">
+					<div class="trigger-label-val">
+						<label for="trigger-cpu">CPU Threshold</label>
+						<span id="cpu-val-display">90%</span>
+					</div>
+					<input type="range" id="trigger-cpu" min="10" max="100" value="90"
+						oninput="document.getElementById('cpu-val-display').textContent = this.value + '%'">
+				</div>
+	
+				<div class="trigger-field-group">
+					<div class="trigger-label-val">
+						<label for="trigger-memory">RAM Threshold</label>
+						<span id="memory-val-display">90%</span>
+					</div>
+					<input type="range" id="trigger-memory" min="10" max="100" value="90"
+						oninput="document.getElementById('memory-val-display').textContent = this.value + '%'">
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn-cancel"
+					onclick="document.getElementById('triggers-modal').classList.remove('active')">Cancel</button>
+				<button class="btn-save" onclick="saveTriggers()">Save Changes</button>
+			</div>
+		</div>
+	</div>
 	<script src="/static/js/index.js"></script>
 </body>
 </html>
