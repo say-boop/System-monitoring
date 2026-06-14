@@ -131,18 +131,18 @@ function showNotification(text, type = "info", duration = 4000) {
   toast.innerHTML = text;
 
   container.prepend(toast);
-	
-	requestAnimationFrame(() => {
-		toast.classList.add("active");
-	});
+
+  requestAnimationFrame(() => {
+    toast.classList.add("active");
+  });
 
   let isRemoving = false;
 
   const removeToast = () => {
     if (isRemoving) return;
     isRemoving = true;
-		
-		toast.classList.remove("active");
+
+    toast.classList.remove("active");
     toast.classList.add("fade-out");
 
     setTimeout(() => {
@@ -527,14 +527,20 @@ socket.onmessage = (event) => {
 
     eventsTable.innerHTML = eventsHtml;
   }
-	
-	if (data.alert_cpu) {
-		showNotification(`⚠️ CPU: ${data.cpu_percent}% threshold: ${data.cpu_threshold}`, "danger");
-	}
-	
-	if (data.alert_memory) {
-		showNotification(`⚠️ Memory: ${data.memory_percent}% threshold: ${data.memory_threshold}`, "danger");
-	}
+
+  if (data.alert_cpu) {
+    showNotification(
+      `⚠️ CPU: ${data.cpu_percent}% threshold: ${data.cpu_threshold}`,
+      "danger",
+    );
+  }
+
+  if (data.alert_memory) {
+    showNotification(
+      `⚠️ Memory: ${data.memory_percent}% threshold: ${data.memory_threshold}`,
+      "danger",
+    );
+  }
 
   let rows = "";
   data.top_processes.forEach((proc) => {
@@ -599,8 +605,6 @@ socket.onmessage = (event) => {
   cpuCoresChart.update();
 };
 
-document.addEventListener("DOMContentLoaded", loadCurrentTriggers);
-
 socket.onerror = (error) => {
   showNotification(`${error}`, "error");
 };
@@ -611,64 +615,178 @@ socket.onclose = (event) => {
   );
 };
 
-async function saveTriggers() {
-  const enabled = document.getElementById("trigger-enabled").checked;
-  const cpuValue = parseInt(document.getElementById("trigger-cpu").value);
-  const memoryValue = parseInt(document.getElementById("trigger-memory").value);
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("triggers-modal");
+  const btnOpen = document.getElementById("btn-open-triggers");
+  const btnCloseCross = document.getElementById("modal-close-cross");
+  const btnCancel = document.getElementById("btn-cancel-triggers");
+  const btnSave = document.getElementById("btn-save-triggers");
 
-  const triggerPayload = {
-    cpu: cpuValue,
-    memory: memoryValue,
-    enabled: enabled,
-  };
+  const cpuSlider = document.getElementById("trigger-cpu");
+  const cpuDisplay = document.getElementById("cpu-val-display");
+  const memSlider = document.getElementById("trigger-memory");
+  const memDisplay = document.getElementById("memory-val-display");
+  const triggerEnabled = document.getElementById("trigger-enabled");
 
-  try {
-    const response = await fetch("/api/triggers", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(triggerPayload),
-    });
+  if (!modal) return;
 
-    if (response.ok) {
-      document.getElementById("triggers-modal").classList.remove("active");
-      showNotification("Trigger settings saved successfully!", "access");
-    } else {
-      showNotification(
-        `Failed to save settings: ${response.statusText}`,
-        "warning",
-      );
-    }
-  } catch (error) {
-    console.error("Error saving triggers:", error);
-    showNotification("Network error. Could not connect to API.", "warning");
-  }
-}
+  const widgetKeys = [
+    "cpu",
+    "memory",
+    "disks",
+    "network",
+    "gpu",
+    "disks_health",
+    "disk_io",
+    "battery",
+    "swap",
+    "processes",
+    "connections",
+    "startup",
+    "ports",
+    "users",
+    "events",
+  ];
 
-async function loadCurrentTriggers() {
-  try {
-    const response = await fetch("/api/triggers", {
-      method: "GET",
-    });
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach((b) => {
+        b.classList.remove("active");
+        b.style.backgroundColor = "transparent";
+        b.style.color = "#8E8E93";
+      });
 
-    if (response.ok) {
-      const currentTriggers = await response.json();
+      btn.classList.add("active");
+      btn.style.backgroundColor = "rgba(10, 132, 255, 0.1)";
+      btn.style.color = "#0A84FF";
 
-      if (currentTriggers) {
-        document.getElementById("trigger-enabled").checked =
-          currentTriggers.enabled ?? true;
-        document.getElementById("trigger-cpu").value =
-          currentTriggers.cpu ?? 90;
-        document.getElementById("cpu-val-display").textContent =
-          `${currentTriggers.cpu ?? 90}%`;
-        document.getElementById("trigger-memory").value =
-          currentTriggers.memory ?? 90;
-        document.getElementById("memory-val-display").textContent =
-          `${currentTriggers.memory ?? 90}%`;
+      const targetTab = btn.getAttribute("data-tab");
+      const tabTriggers = document.getElementById("tab-triggers");
+      const tabWidgets = document.getElementById("tab-widgets");
+
+      if (targetTab === "tab-triggers") {
+        if (tabTriggers) tabTriggers.style.display = "flex";
+        if (tabWidgets) tabWidgets.style.display = "none";
+      } else {
+        if (tabTriggers) tabTriggers.style.display = "none";
+        if (tabWidgets) tabWidgets.style.display = "grid";
       }
-    }
-  } catch (error) {
-    console.error("Error loading initial triggers:", error);
+    });
+  });
+
+  if (btnOpen)
+    btnOpen.addEventListener("click", () => modal.classList.add("active"));
+
+  const closeModal = () => modal.classList.remove("active");
+  if (btnCloseCross) btnCloseCross.addEventListener("click", closeModal);
+  if (btnCancel) btnCancel.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  if (cpuSlider && cpuDisplay) {
+    cpuSlider.addEventListener("input", (e) => {
+      cpuDisplay.textContent = `${e.target.value}%`;
+    });
   }
-}
+  if (memSlider && memDisplay) {
+    memSlider.addEventListener("input", (e) => {
+      memDisplay.textContent = `${e.target.value}%`;
+    });
+  }
+
+  function applyWidgetsVisibility(widgetsState) {
+    widgetKeys.forEach((key) => {
+      const cardElement = document.getElementById(`card-${key}`);
+      if (cardElement) {
+        if (widgetsState[key] === false) {
+          cardElement.classList.add("widget-hidden-state");
+        } else {
+          cardElement.classList.remove("widget-hidden-state");
+        }
+      }
+    });
+  }
+
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      const triggersPayload = {
+        cpu: cpuSlider ? parseInt(cpuSlider.value) : 90,
+        memory: memSlider ? parseInt(memSlider.value) : 90,
+        enabled: triggerEnabled ? triggerEnabled.checked : true,
+      };
+
+      const widgetsPayload = {};
+      widgetKeys.forEach((key) => {
+        const checkbox = document.getElementById(`widget-${key}`);
+        widgetsPayload[key] = checkbox ? checkbox.checked : true;
+      });
+
+      try {
+        const [resTriggers, resWidgets] = await Promise.all([
+          fetch("/api/triggers", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(triggersPayload),
+          }),
+          fetch("/api/widgets", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(widgetsPayload),
+          }),
+        ]);
+
+        if (resTriggers.ok && resWidgets.ok) {
+          applyWidgetsVisibility(widgetsPayload);
+          closeModal();
+          showNotification("All settings updated successfully!", "access");
+        } else {
+          showNotification(
+            `Failed to save settings. Triggers: ${resTriggers.status}, Widgets: ${resWidgets.status}`,
+            "error",
+          );
+        }
+      } catch (error) {
+        console.error("Error saving settings via API:", error);
+        showNotification("Network error while saving settings.", "error");
+      }
+    });
+  }
+
+  async function loadInitialSettings() {
+    try {
+      const [resTriggers, resWidgets] = await Promise.all([
+        fetch("/api/triggers").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/widgets").then((r) => (r.ok ? r.json() : null)),
+      ]);
+
+      if (resTriggers) {
+        if (triggerEnabled)
+          triggerEnabled.checked = resTriggers.enabled ?? true;
+        if (cpuSlider && cpuDisplay) {
+          cpuSlider.value = resTriggers.cpu ?? 90;
+          cpuDisplay.textContent = `${resTriggers.cpu ?? 90}%`;
+        }
+        if (memSlider && memDisplay) {
+          memSlider.value = resTriggers.memory ?? 90;
+          memDisplay.textContent = `${resTriggers.memory ?? 90}%`;
+        }
+      }
+
+      if (resWidgets) {
+        widgetKeys.forEach((key) => {
+          const checkbox = document.getElementById(`widget-${key}`);
+          if (checkbox && resWidgets[key] !== undefined) {
+            checkbox.checked = resWidgets[key];
+          }
+        });
+        applyWidgetsVisibility(resWidgets);
+      }
+    } catch (error) {
+      console.error("Error loading settings from API:", error);
+    }
+  }
+
+  loadInitialSettings();
+});

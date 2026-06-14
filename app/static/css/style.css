@@ -912,10 +912,6 @@ tbody td:nth-child(4) {
 	background-color: rgba(255, 159, 10, 0.02);
 }
 
-
-
-
-
 .modal-overlay {
 	position: fixed;
 	top: 0;
@@ -1129,9 +1125,6 @@ input:checked+.slider-toggle:before {
 	gap: 12px;
 }
 
-
-
-
 .toast-container {
 	position: fixed;
 	top: 50px;
@@ -1190,6 +1183,31 @@ input:checked+.slider-toggle:before {
 	border-left: 4px solid #0A84FF;
 }
 
+.tab-btn {
+	background: transparent;
+	border: none;
+	color: #8E8E93;
+	font-size: 0.9rem;
+	font-weight: 600;
+	padding: 6px 12px;
+	cursor: pointer;
+	border-radius: 6px;
+	transition: background-color 0.15s, color 0.15s;
+}
+
+.tab-btn:hover {
+	color: #FFFFFF;
+	background-color: #2C2C2E;
+}
+
+.tab-btn.active {
+	color: #0A84FF;
+	background-color: rgba(10, 132, 255, 0.1);
+}
+
+.widget-hidden-state {
+	display: none !important;
+}
 
 @media (max-width: 1024px) {
 	.dashboard-container {

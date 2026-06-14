@@ -22,6 +22,26 @@ triggers = {
 	"enabled": True
 }
 
+widgets = {
+  "cpu": True,
+  "memory": True,
+  "disks": True,
+  "network": True,
+  "gpu": True,
+  "disks_health": True,
+  "disk_io": True,
+  "battery": True,
+ 	"swap": True,
+  "processes": True,
+  "connections": True,
+  "startup": True,
+  "ports": True,
+  "users": True,
+  "events": True
+}
+
+pinned_pids = set()
+
 class TriggerSettings(BaseModel):
 	cpu: int = 90
 	memory: int = 90
@@ -195,6 +215,18 @@ def update_triggers(settings: TriggerSettings):
 	triggers["enabled"] = settings.enabled
 
 	return triggers
+
+
+@app.get("/api/widgets")
+def get_widgets():
+	return widgets
+
+
+@app.put("/api/widgets")
+def update_widgets(settings: dict):
+	widgets.update(settings)
+
+	return widgets
 	
 
 @app.websocket("/ws/metrics")

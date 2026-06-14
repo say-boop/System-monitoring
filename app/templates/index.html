@@ -13,19 +13,19 @@
 		<div id="battery-header-container" class="battery-hidden"></div>
 		<div class="header-actions-group">
 			<button class="button-export" onclick="exportReport()">📄 Export Report</button>
-			<button class="button-export" onclick="document.getElementById('triggers-modal').classList.add('active')">⚙️ Settings Triggers</button>
+			<button class="button-export" onclick="document.getElementById('triggers-modal').classList.add('active')">⚙️ Settings</button>
 		</div>
 	</header>
 	<main class="dashboard-container">
 		<div class="metrics-grid">
 			<div class="metrics-top-row">
-				<div class="card">
+				<div class="card" id="card-cpu">
 					<h3>CPU <div class="uptime-cpu-style"><span id="cpu-uptime"></span></div></h3>
 					<div class="card-style"><span id="cpu-value"></span>%</div>
 					<div class="cpu-cores-style"><span id="cpu-cores"></span></div>
 				</div>
 				<div class="metrics-right-subrow">
-					<div class="card">
+					<div class="card" id="card-memory">
 						<h3>RAM</h3>
 						<div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 32px;">
 							<div style="flex: 1; display: flex; flex-direction: column;">
@@ -48,25 +48,25 @@
 							</div>
 						</div>
 					</div>
-					<div class="card">
+					<div class="card" id="card-network">
 						<h3>Network</h3>
 						<div class="network-style"><span id="net-sent-recv"></span></div>
 					</div>
-					<div class="card">
+					<div class="card" id="card-gpu">
 						<h3>GPU</h3>
 						<div id="gpu-info"></div>
 					</div>
 				</div>
 			</div>
-			<div class="card">
+			<div class="card" id="card-disks">
 				<h3>Disks</h3>
 				<div id="disk-details"></div>
 			</div>
-			<div class="card">
+			<div class="card" id="card-disks_health">
 				<h3>Disks Health</h3>
 				<div id="disks-health-info"></div>
 			</div>
-			<div class="table-processes table-active-users">
+			<div class="table-processes table-active-users" id="card-users">
 				<h3>Active Users</h3>
 				<table>
 					<thead>
@@ -81,7 +81,7 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="table-processes">
+			<div class="table-processes" id="card-processes">
 				<h3>Top 5 Processes</h3>
 				<table>
 					<thead>
@@ -103,7 +103,7 @@
 				<div class="process-detail-content" id="process-detail-content"></div>
 				<button class="detail-close-btn" onclick="document.getElementById('process-detail').style.display='none'">Close</button>
 			</div>
-			<div class="table-processes">
+			<div class="table-processes" id="card-connections">
 				<h3>Network Connections</h3>
 				<table>
 					<thead>
@@ -119,7 +119,7 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="table-processes table-network-connections">
+			<div class="table-processes table-network-connections" id="card-ports">
 				<h3>Listening Ports</h3>
 				<table>
 					<thead>
@@ -135,7 +135,7 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="table-processes">
+			<div class="table-processes" id="card-startup">
 				<h3>Startup Programs</h3>
 				<table>
 					<thead>
@@ -150,7 +150,7 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="table-processes table-event-log">
+			<div class="table-processes table-event-log" id="card-events">
 				<h3>Event Log (Errors & Warnings)</h3>
 				<table>
 					<thead>
@@ -184,43 +184,85 @@
 		</div>
 	</main>
 	<div id="triggers-modal" class="modal-overlay">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h2>Trigger Settings</h2>
-				<span class="modal-close" style="cursor:pointer;"
-					onclick="document.getElementById('triggers-modal').classList.remove('active')">✕</span>
-			</div>
-			<div class="modal-body">
-				<div class="trigger-field-row">
-					<label>Enable Notifications</label>
-					<label class="switch-toggle">
-						<input type="checkbox" id="trigger-enabled">
-						<span class="slider-toggle"></span>
-					</label>
+		<div class="modal-content" style="width: 500px;">
+			<div class="modal-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<h2>Dashboard Settings</h2>
+					<span class="modal-close" id="modal-close-cross">✕</span>
 				</div>
-	
-				<div class="trigger-field-group">
-					<div class="trigger-label-val">
-						<label for="trigger-cpu">CPU Threshold</label>
-						<span id="cpu-val-display">90%</span>
-					</div>
-					<input type="range" id="trigger-cpu" min="10" max="100" value="90"
-						oninput="document.getElementById('cpu-val-display').textContent = this.value + '%'">
-				</div>
-	
-				<div class="trigger-field-group">
-					<div class="trigger-label-val">
-						<label for="trigger-memory">RAM Threshold</label>
-						<span id="memory-val-display">90%</span>
-					</div>
-					<input type="range" id="trigger-memory" min="10" max="100" value="90"
-						oninput="document.getElementById('memory-val-display').textContent = this.value + '%'">
+				<div class="modal-tabs"
+					style="display: flex; gap: 12px; border-bottom: 1px solid #2C2C2E; padding-bottom: 12px; margin-bottom: 16px;">
+					<button class="tab-btn active" data-tab="tab-triggers"
+						style="background: rgba(10, 132, 255, 0.1); border: none; color: #0A84FF; font-size: 0.9rem; font-weight: 600; padding: 8px 16px; cursor: pointer; border-radius: 8px; transition: all 0.15s ease;">Alert
+						Triggers</button>
+					<button class="tab-btn" data-tab="tab-widgets"
+						style="background: transparent; border: none; color: #8E8E93; font-size: 0.9rem; font-weight: 600; padding: 8px 16px; cursor: pointer; border-radius: 8px; transition: all 0.15s ease;">Visible
+						Widgets</button>
 				</div>
 			</div>
+	
+			<div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+				<div id="tab-triggers" class="tab-content active" style="display: flex; flex-direction: column; gap: 24px;">
+					<div class="trigger-field-row">
+						<label>Enable Notifications</label>
+						<label class="switch-toggle">
+							<input type="checkbox" id="trigger-enabled">
+							<span class="slider-toggle"></span>
+						</label>
+					</div>
+					<div class="trigger-field-group">
+						<div class="trigger-label-val">
+							<label for="trigger-cpu">CPU Threshold</label>
+							<span id="cpu-val-display">90%</span>
+						</div>
+						<input type="range" id="trigger-cpu" min="10" max="100" value="90">
+					</div>
+					<div class="trigger-field-group">
+						<div class="trigger-label-val">
+							<label for="trigger-memory">RAM Threshold</label>
+							<span id="memory-val-display">90%</span>
+						</div>
+						<input type="range" id="trigger-memory" min="10" max="100" value="90">
+					</div>
+				</div>
+				<div id="tab-widgets" class="tab-content"
+					style="display: none; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+					<div class="trigger-field-row"><label>CPU Panel</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-cpu" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Memory (RAM)</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-memory" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Disks List</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-disks" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Network Speed</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-network" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>GPU Panel</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-gpu" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Disks Health</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-disks_health" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Disk IO Activity</label><label class="switch-toggle"><input
+								type="checkbox" id="widget-disk_io" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Battery Status</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-battery" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Swap Memory</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-swap" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Process Manager</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-processes" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Net Connections</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-connections" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Startup Programs</label><label class="switch-toggle"><input
+								type="checkbox" id="widget-startup" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Listening Ports</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-ports" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Active Users</label><label class="switch-toggle"><input type="checkbox"
+								id="widget-users" checked><span class="slider-toggle"></span></label></div>
+					<div class="trigger-field-row"><label>Windows Event Log</label><label class="switch-toggle"><input
+								type="checkbox" id="widget-events" checked><span class="slider-toggle"></span></label></div>
+				</div>
+			</div>
+	
 			<div class="modal-footer">
-				<button class="btn-cancel"
-					onclick="document.getElementById('triggers-modal').classList.remove('active')">Cancel</button>
-				<button class="btn-save" onclick="saveTriggers()">Save Changes</button>
+				<button class="btn-cancel" id="btn-cancel-triggers">Cancel</button>
+				<button class="btn-save" id="btn-save-triggers">Save Changes</button>
 			</div>
 		</div>
 	</div>
