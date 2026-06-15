@@ -66,6 +66,14 @@
 				<h3>Disks Health</h3>
 				<div id="disks-health-info"></div>
 			</div>
+			<div class="card">
+				<h3>Statistics</h3>
+				<div style="display: flex; gap: 8px; margin-bottom: 8px;">
+					<button class="range-btn active" data-stats-range="hour">1 Hour</button>
+					<button class="range-btn" data-stats-range="day">24 Hour</button>
+				</div>
+				<div id="stats-content"></div>
+			</div>
 			<div class="table-processes table-active-users" id="card-users">
 				<h3>Active Users</h3>
 				<table>
@@ -173,6 +181,8 @@
 			<canvas id="cpu-history-chart"></canvas>
 			<h3>Network History</h3>
 			<canvas id="network-chart"></canvas>
+			<h3>Disk IO History</h3>
+			<canvas id="disk-io-chart"></canvas>
 			<h3>CPU Per Core</h3>
 			<canvas id="cpu-cores-chart"></canvas>
 			<h3 id="history-title">History (last 60 minutes)</h3>

@@ -1,4 +1,8 @@
 let cpuHistory = new Array(30).fill(0);
+let netSentHistory = new Array(30).fill(0);
+let netRecvHistory = new Array(30).fill(0);
+let diskReadHistory = new Array(30).fill(0);
+let diskWriteHistory = new Array(30).fill(0);
 
 const ctx = document.getElementById("cpu-history-chart").getContext("2d");
 const cpuHistoryChart = new Chart(ctx, {
@@ -23,9 +27,6 @@ const cpuHistoryChart = new Chart(ctx, {
     },
   },
 });
-
-const netSentHistory = new Array(30).fill(0);
-const netRecvHistory = new Array(30).fill(0);
 
 const ctxNetwork = document.getElementById("network-chart").getContext("2d");
 const networkChart = new Chart(ctxNetwork, {
@@ -73,7 +74,7 @@ const ctxHistory = document.getElementById("history-chart").getContext("2d");
 const historyChart = new Chart(ctxHistory, {
   type: "line",
   data: {
-    lables: [],
+    labels: [],
     datasets: [
       {
         label: "CPU %",
@@ -93,6 +94,12 @@ const historyChart = new Chart(ctxHistory, {
         borderColor: "rgb(153, 102, 255)",
         tension: 0.1,
       },
+      {
+        label: "Swap %",
+        data: [],
+        borderColor: "rgb(255, 99, 255)",
+        tension: 0.1,
+      }
     ],
   },
   options: {
@@ -103,6 +110,44 @@ const historyChart = new Chart(ctxHistory, {
       },
     },
   },
+});
+
+const ctxDiskIO = document.getElementById("disk-io-chart").getContext("2d");
+const diskIOChart = new Chart(ctxDiskIO, {
+  type: "line",
+  data: {
+    labels: [...Array(30).keys()].map((i) => i + 1),
+    datasets: [
+      {
+        label: "Read MB/s",
+        data: diskReadHistory,
+        borderColor: "rgb(48, 209, 88)",
+        tension: 0.1,
+      },
+      {
+        label: "Write MB/s",
+        data: diskWriteHistory,
+        borderColor: "rgb(255, 159, 64)",
+        tension: 0.1,
+      },
+    ],
+  },
+	options: {
+		scales: {
+			y: {min: 0}
+		}
+	}
+});
+
+document.querySelectorAll("[data-stats-range]").forEach(function(btn) {
+	btn.addEventListener("click", function() {
+		document.querySelectorAll("[data-stats-range]").forEach(function(b) {
+			b.classList.remove("active");
+		});
+		this.classList.add("active");
+		var range = this.getAttribute("data-stats-range");
+		loadStats(range)
+	});
 });
 
 document.querySelectorAll(".range-btn").forEach(function (btn) {
@@ -247,6 +292,7 @@ async function loadHistory(range = "hour") {
     historyChart.data.datasets[0].data = data.map((row) => row.cpu_percent);
     historyChart.data.datasets[1].data = data.map((row) => row.memory_percent);
     historyChart.data.datasets[2].data = data.map((row) => row.disk_percent);
+		historyChart.data.datasets[3].data = data.map((row) => row.swap_percent || 0);
 
     historyChart.update();
 
@@ -265,7 +311,63 @@ function exportReport() {
   window.open("/api/export", "_blank");
 }
 
+async function loadStats(range = "hour") {
+	try {
+		const response = await fetch(`/api/stats?range=${range}`);
+		const data = await response.json();
+		
+		const content = document.getElementById("stats-content");
+		
+		if (!data || Object.keys(data).length === 0) {
+			content.innerHTML = "<p>No data yet</p>";
+			return;
+		}
+		
+		let html = `<table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Avg</th>
+                    <th>Max</th>
+                    <th>Min</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CPU %</td>
+                    <td>${data.cpu.avg}</td>
+                    <td>${data.cpu.max}</td>
+                    <td>${data.cpu.min}</td>
+                </tr>
+                <tr>
+                    <td>Memory %</td>
+                    <td>${data.memory.avg}</td>
+                    <td>${data.memory.max}</td>
+                    <td>${data.memory.min}</td>
+                </tr>
+                <tr>
+                    <td>Disk %</td>
+                    <td>${data.disk.avg}</td>
+                    <td>${data.disk.max}</td>
+                    <td>${data.disk.min}</td>
+                </tr>
+                <tr>
+                    <td>Swap %</td>
+                    <td>${data.swap.avg}</td>
+                    <td>${data.swap.max}</td>
+                    <td>${data.swap.min}</td>
+                </tr>
+            </tbody>
+        </table>`;
+		
+		content.innerHTML = html;
+	} catch (error) {
+		console.error("Failed to load stats:", error)
+	}
+}
+
 loadHistory();
+loadStats();
 
 let messageCount = 0;
 let prevNetSent = 0;
@@ -574,6 +676,25 @@ socket.onmessage = (event) => {
     </tr>`;
   });
   document.getElementById("startup-table").innerHTML = startupRows;
+	
+	let totalRead = 0;
+	let totalWrite = 0;
+	if (data.disks) {
+		Object.values(data.disks).forEach(io => {
+			totalRead += io.disk_io_read_mb;
+			totalWrite += io.disk_io_write_mb;
+		});
+	}
+	
+	diskReadHistory.push(totalRead);
+	diskWriteHistory.push(totalWrite);
+	if (diskReadHistory.length > 30) {
+		diskReadHistory.shift();
+		diskWriteHistory.shift();
+	}
+	diskIOChart.data.datasets[0].data = diskReadHistory;
+	diskIOChart.data.datasets[1].data = diskWriteHistory;
+	diskIOChart.update();
 
   cpuHistory.push(data.cpu_percent);
   if (cpuHistory.length > 30) {

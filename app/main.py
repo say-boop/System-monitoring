@@ -9,7 +9,7 @@ import asyncio
 import psutil
 
 
-from app.database import save_metrics, get_history
+from app.database import save_metrics, get_history, cleanup_old_records, get_stats
 from app.metrics import get_metrics_all
 
 
@@ -227,12 +227,18 @@ def update_widgets(settings: dict):
 	widgets.update(settings)
 
 	return widgets
+
+
+@app.get("/api/stats")
+def get_stats_data(range: str = "hour"):
+	return get_stats(range)
 	
 
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):
 	await websocket.accept()
 	last_save_time = datetime.now()
+	last_cleanup_time = datetime.now()
 	
 	try:
 		while True:
@@ -251,6 +257,10 @@ async def websocket_metrics(websocket: WebSocket):
 				if content["memory_percent"] > triggers["memory"]:
 					content["alert_memory"] = True
 					logger.warning(f"Memory threshold exceeded: {content["memory_percent"]}% > {triggers["memory"]}%")
+
+			if (datetime.now() - last_cleanup_time).seconds >= 3600:
+				cleanup_old_records()
+				last_cleanup_time = datetime.now()
 
 			if (datetime.now() - last_save_time).seconds >= 60:
 				save_metrics(content)
