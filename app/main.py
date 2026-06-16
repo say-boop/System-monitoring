@@ -2,8 +2,8 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPExcept
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
 from datetime import datetime
+import subprocess
 import logging
 import asyncio
 import psutil
@@ -11,6 +11,7 @@ import psutil
 
 from app.database import save_metrics, get_history, cleanup_old_records, get_stats
 from app.metrics import get_metrics_all
+from app.schemas.schem import TriggerSettings, PriorityRequest, RunPrograms
 
 
 app = FastAPI()
@@ -41,12 +42,6 @@ widgets = {
 }
 
 pinned_pids = set()
-
-class TriggerSettings(BaseModel):
-	cpu: int = 90
-	memory: int = 90
-	enabled: bool = True
-
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -149,6 +144,74 @@ def process_info(pid: int):
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
+@app.put("/api/process/{pid}/priority")
+def set_process_priority(pid: int, priority: PriorityRequest):
+	priority_map = {
+		"idle": psutil.IDLE_PRIORITY_CLASS,
+		"low": psutil.BELOW_NORMAL_PRIORITY_CLASS,
+		"below_normal": psutil.BELOW_NORMAL_PRIORITY_CLASS,
+		"normal": psutil.NORMAL_PRIORITY_CLASS,
+		"above_normal": psutil.ABOVE_NORMAL_PRIORITY_CLASS,
+		"high": psutil.HIGH_PRIORITY_CLASS,
+		"realtime": psutil.REALTIME_PRIORITY_CLASS
+	}
+
+	try:
+		proc = psutil.Process(pid)
+		proc.nice(priority_map[priority])
+		return {
+			"status": "ok",
+			"pid": pid,
+			"priority": priority
+		}
+	except KeyError:
+		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid priority: {priority}")
+	except psutil.NoSuchProcess:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
+	except psutil.AccessDenied:
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
+@app.get("/api/process/{pid}/tree")
+def process_tree(pid: int):
+	try:
+		proc = psutil.Process(pid)
+		ppid = proc.ppid()
+		if ppid and ppid != 0:
+			try:
+				parent = {
+					"pid": ppid,
+					"name": psutil.Process(ppid).name()
+				}
+			except (psutil.NoSuchProcess, psutil.AccessDenied):
+				parent = None
+		else:
+			parent = None
+		
+		children_list = []
+		for child in proc.children():
+			try:
+				children_list.append({
+					"pid": child.pid,
+					"name": child.name(),
+					"cpu_percent": round(child.cpu_percent(interval=None) / psutil.cpu_count(), 1),
+					"status": str(child.status())
+				})
+			except (psutil.NoSuchProcess, psutil.AccessDenied):
+				continue
+
+		return {
+			"pid": pid,
+			"name": proc.name(),
+			"parent": parent,
+			"children": children_list
+		}
+	except psutil.NoSuchProcess:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
+	except psutil.AccessDenied:
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
 @app.get("/api/export")
 def export_report():
 	metrics = get_metrics_all()
@@ -232,7 +295,21 @@ def update_widgets(settings: dict):
 @app.get("/api/stats")
 def get_stats_data(range: str = "hour"):
 	return get_stats(range)
-	
+
+
+@app.post("/api/run")
+def run_program(data: RunPrograms):
+	if not data.command.strip():
+		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Commamd is empty")
+	try:
+		subprocess.Popen(data.command, shell=True)
+		return {
+			"status": "launched",
+			"command": data.command
+		}
+	except Exception as e:
+		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):

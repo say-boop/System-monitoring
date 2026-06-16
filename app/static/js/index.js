@@ -262,7 +262,86 @@ async function showProcessInfo(pid) {
         <span class="detail-label">Path:</span>
         <span class="detail-value process-path">${info.exe}</span>
     	</div>
+			<hr style="border-color:#2C2C2E; margin:12px 0;">
+    	<label style="color:#8E8E93; font-size:0.85rem;">Change Priority:</label>
+    	<div style="display:flex; gap:8px; margin-top:8px;">
+        <select id="priority-select" style="background:#1C1C1C; border:1px solid #2C2C2E; color:#E0E0E0; padding:6px; border-radius:4px;">
+          <option value="idle">Idle</option>
+          <option value="low">Low</option>
+          <option value="below_normal">Below Normal</option>
+          <option value="normal" selected>Normal</option>
+          <option value="above_normal">Above Normal</option>
+          <option value="high">High</option>
+          <option value="realtime">Real-time</option>
+        </select>
+      	<button id="apply-priority-btn" class="range-btn">Apply</button>
+    	</div>
+			<hr style="border-color:#2C2C2E; margin:12px 0">
+			<button id="show-tree-btn" class="range-btn">🌳 Show Process Tree</button>
+			<div id="process-tree" style="display:none; margin-top:8px"></div>
 		`;
+		
+		document.getElementById("apply-priority-btn").addEventListener("click", async function() {
+			const priority = document.getElementById("priority-select").value;
+			try {
+				const response = await fetch(`/api/process/${pid}/priority`, {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({priority: priority})
+				});
+				if (response.ok) {
+					showNotification(`Priority set to ${priority}`, "access");
+				} else {
+					const error = await response.json();
+					showNotification(`Failed: ${error.detail}`, "danger");
+				}
+			} catch (error) {
+				showNotification("Error setting priority", "danger");
+			}
+		});
+		
+		document.getElementById("show-tree-btn").addEventListener("click", async function() {
+			const treeDiv = document.getElementById("process-tree");
+			if (treeDiv.style.display === "block") {
+				treeDiv.style.display = "none";
+				this.textContent = "🌳 Show Process Tree";
+				return;
+			}
+			
+			try {
+				const response = await fetch(`/api/process/${pid}/tree`);
+				if (!response.ok) throw new Error("Failed");
+				const tree = await response.json();
+				
+				let html = `<div style="margin-top:8px; padding:10px; background:#1C1C1C; border-radius:6px; border:1px solid #2C2C2E">`;
+				
+				if (tree.parent) {
+					html += `<div style="margin-bottom:4px;">⬆️ Parent: <span style="color:#0A84FF;">${tree.parent.name}</span> (PID: ${tree.parent.pid})</div>`;
+				} else {
+					html += `<div style="margin-bottom:4px; color:#8E8E93;">⬆️ Parent: None</div>`;
+				}
+				
+				html += `<div style="margin:6px 0; padding:4px 0; border-top:1px solid #2C2C2E; border-bottom:1px solid #2C2C2E;">➡️ <strong>${tree.name}</strong> (PID: ${tree.pid})</div>`;
+				
+				if (tree.children && tree.children.length > 0) {
+					html += `<div style="margin-top:4px;">⬇️ Children (${tree.children.length}):</div>`;
+					tree.children.forEach(child => {
+						html += `<div style="margin-left:16px; margin-top:5px; font-size:0.85rem;">- ${child.name} (PID: ${child.pid}) <span style="color:#8E8E93;">[${child.status}]</span></div>`;
+					});
+				} else {
+					html += `<div style="margin-top:4px; color:#8E8E93;">⬇️ Children: None</div>`;
+				}
+				
+				html += `</div>`;
+				treeDiv.innerHTML = html;
+				treeDiv.style.display = "block";
+				this.textContent = "🌳 Hide Process Tree";
+			} catch (error) {
+				showNotification("Failed to load process tree", "danger");
+			}
+		})
 
     document.getElementById("process-detail").style.display = "block";
   } catch (error) {
@@ -365,6 +444,42 @@ async function loadStats(range = "hour") {
 		console.error("Failed to load stats:", error)
 	}
 }
+
+async function runCommand() {
+	const input = document.getElementById("run-command");
+	const command = input.value.trim();
+	
+	if (!command) {
+		showNotification("Enter a command", "warning");
+		return;
+	}
+	
+	try {
+		const response = await fetch("/api/run", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({command: command})
+		});
+		
+		if (response.ok) {
+			showNotification(`Launched: ${command}`, "access")
+			input.value = "";
+		} else {
+			const error = await response.json();
+			showNotification(`Failed: ${error.detail}`, "danger");
+		}
+	} catch (error) {
+		showNotification("Error launching program", "danger")
+	}
+}
+
+document.getElementById("run-command").addEventListener("keypress", function(e) {
+	if (e.key === "Enter") {
+		runCommand()
+	}
+})
 
 loadHistory();
 loadStats();

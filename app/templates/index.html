@@ -14,6 +14,10 @@
 		<div class="header-actions-group">
 			<button class="button-export" onclick="exportReport()">📄 Export Report</button>
 			<button class="button-export" onclick="document.getElementById('triggers-modal').classList.add('active')">⚙️ Settings</button>
+			<div style="display: flex; align-items: center; gap: 6px;">
+				<input id="run-command" type="text" placeholder="notepad.exe" style="background: #1C1C1E; border: 1px solid #2C2C2E; color: #E0E0E0; padding: 4px 8px; border-radius: 4px; width: 150px;">
+				<button onclick="runCommand()" class="button-export">🚀 Run</button>
+			</div>
 		</div>
 	</header>
 	<main class="dashboard-container">
